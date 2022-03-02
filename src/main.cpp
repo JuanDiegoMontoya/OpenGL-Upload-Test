@@ -405,7 +405,7 @@ void LoadTexturesParallelMap(CheapVector<GLuint, VEC_SIZE>& textures)
   {
     const auto& pixelInfo = pixels2[i];
     const auto& buffer = buffers[i];
-    glNamedBufferStorage(buffer, pixelInfo.x * pixelInfo.y * 4, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+    glNamedBufferStorage(buffer, pixelInfo.x * pixelInfo.y * 4, nullptr, GL_MAP_WRITE_BIT);
     bufferPointers[i] = glMapNamedBuffer(buffer, GL_WRITE_ONLY);
   }
 
@@ -442,6 +442,8 @@ void LoadTexturesParallelMap(CheapVector<GLuint, VEC_SIZE>& textures)
     glTextureSubImage2D(tex, 0, 0, 0, pixelInfo.x, pixelInfo.y, GL_RGBA, GL_UNSIGNED_BYTE, 0);
     textures.emplace_back(tex);
   }
+
+  glDeleteBuffers(filesToLoad.size(), buffers.data());
 }
 
 auto main() -> int
