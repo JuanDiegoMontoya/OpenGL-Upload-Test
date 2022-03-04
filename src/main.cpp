@@ -310,6 +310,7 @@ struct PixelInfo
   stbi_uc* pixels;
 };
 
+// Loads all the textures in the assets directory serially
 void LoadTexturesSerial(CheapVector<GLuint, VEC_SIZE>& textures)
 {
   std::filesystem::directory_iterator it{ "assets/" };
@@ -336,7 +337,8 @@ void LoadTexturesSerial(CheapVector<GLuint, VEC_SIZE>& textures)
   }
 }
 
-void LoadTexturesParallelLoadToRAM(CheapVector<GLuint, VEC_SIZE>& textures)
+// Loads all the textures in the assets directory in parallel, then uploads them serially
+void LoadTexturesParallelLoadSerialUpload(CheapVector<GLuint, VEC_SIZE>& textures)
 {
   CheapVector<PixelInfo, VEC_SIZE> pixels2;
   CheapVector<std::string, VEC_SIZE> filesToLoad;
@@ -373,7 +375,8 @@ void LoadTexturesParallelLoadToRAM(CheapVector<GLuint, VEC_SIZE>& textures)
   }
 }
 
-void LoadTexturesParallelMap(CheapVector<GLuint, VEC_SIZE>& textures)
+// Loads all the textures in the assets directory in parallel, creates one mapped PBO per texture, then uploads all the textures in parallel
+void LoadTexturesParallelPBO(CheapVector<GLuint, VEC_SIZE>& textures)
 {
   CheapVector<PixelInfo, VEC_SIZE> pixels2;
   CheapVector<std::string, VEC_SIZE> filesToLoad;
@@ -405,8 +408,9 @@ void LoadTexturesParallelMap(CheapVector<GLuint, VEC_SIZE>& textures)
   {
     const auto& pixelInfo = pixels2[i];
     const auto& buffer = buffers[i];
-    glNamedBufferStorage(buffer, pixelInfo.x * pixelInfo.y * 4, nullptr, GL_MAP_WRITE_BIT | GL_CLIENT_STORAGE_BIT);
+    glNamedBufferStorage(buffer, pixelInfo.x * pixelInfo.y * 4, nullptr, GL_MAP_WRITE_BIT);
     bufferPointers[i] = glMapNamedBuffer(buffer, GL_WRITE_ONLY);
+    assert(bufferPointers[i]);
   }
 
   CheapVector<size_t, VEC_SIZE> iota;
@@ -454,14 +458,16 @@ auto main() -> int
   glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
   glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
   int frameWidth, frameHeight;
   glfwGetFramebufferSize(window, &frameWidth, &frameHeight);
 
   glViewport(0, 0, frameWidth, frameHeight);
   glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
   stbi_set_flip_vertically_on_load(true);
+
+  // convenience
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
   CheapVector<GLuint, VEC_SIZE> textures;
 
@@ -471,11 +477,11 @@ auto main() -> int
   auto elapsed = timer.Elapsed_ms();
   std::cout << "Load textures serial (ms): " << elapsed << "\n";
 #elif METHOD == 1
-  LoadTexturesParallelLoadToRAM(textures);
+  LoadTexturesParallelLoadSerialUpload(textures);
   auto elapsed = timer.Elapsed_ms();
   std::cout << "Load textures parallel load to RAM (ms): " << elapsed << "\n";
 #elif METHOD == 2
-  LoadTexturesParallelMap(textures);
+  LoadTexturesParallelPBO(textures);
   auto elapsed = timer.Elapsed_ms();
   std::cout << "Load textures parallel map (ms): " << elapsed << "\n";
 #endif
