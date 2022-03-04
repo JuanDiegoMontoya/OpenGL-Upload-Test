@@ -19,7 +19,7 @@
 #include "stb_image.h"
 
 #define METHOD 2
-constexpr size_t VEC_SIZE = 128;
+constexpr size_t VEC_SIZE = 256;
 
 const char* const gVertexSource = R"(
 #version 460 core
@@ -405,7 +405,7 @@ void LoadTexturesParallelMap(CheapVector<GLuint, VEC_SIZE>& textures)
   {
     const auto& pixelInfo = pixels2[i];
     const auto& buffer = buffers[i];
-    glNamedBufferStorage(buffer, pixelInfo.x * pixelInfo.y * 4, nullptr, GL_MAP_WRITE_BIT);
+    glNamedBufferStorage(buffer, pixelInfo.x * pixelInfo.y * 4, nullptr, GL_MAP_WRITE_BIT | GL_CLIENT_STORAGE_BIT);
     bufferPointers[i] = glMapNamedBuffer(buffer, GL_WRITE_ONLY);
   }
 
@@ -429,13 +429,9 @@ void LoadTexturesParallelMap(CheapVector<GLuint, VEC_SIZE>& textures)
 
   for (size_t i = 0; i < filesToLoad.size(); i++)
   {
-    glUnmapNamedBuffer(buffers[i]);
-  }
-
-  for (size_t i = 0; i < filesToLoad.size(); i++)
-  {
     const auto& pixelInfo = pixels2[i];
     GLuint tex;
+    glUnmapNamedBuffer(buffers[i]);
     glCreateTextures(GL_TEXTURE_2D, 1, &tex);
     glTextureStorage2D(tex, 1, GL_RGBA8, pixelInfo.x, pixelInfo.y);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, buffers[i]);

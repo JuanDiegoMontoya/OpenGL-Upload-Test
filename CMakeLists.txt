@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(teste)
+project(tests)
 
 set(CMAKE_CXX_STANDARD 20)
 
