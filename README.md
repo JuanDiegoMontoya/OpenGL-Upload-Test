@@ -43,7 +43,7 @@ For the PBO method, I tested a variety of combinations of all the buffer storage
 
 It's obvious that loading from disk should be parallelized, especially when considering how trivial it is to do with `std::execution::par`.
 
-The next question is: how can I parallelize uploading this data to the GPU? This is actually extremely cheap even with over 900 MBs of data.
+The next question is: how can I parallelize uploading this data to the GPU? This is actually surprisingly cheap. Even with over 900 MBs of data it only represented a fraction of the time spent loading.
 
 My hypothesis was to create a PBO per texture, map the pointers, then `memcpy` the texture data to those pointers in parallel.
 As it turns out, this method is actually slower than serially uploading!
